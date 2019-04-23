@@ -1,2 +1,2 @@
 # ICDAR2019-tools
-This repo is the tools for ICDAR2019 competitions
+This repo develops the tools for ICDAR2019 competitions
