@@ -39,7 +39,14 @@ CONFIG = {
         "points_len": 4
     },
     "art": {
-
+        "name": "art",
+        "TOTAL_NUM": 4563,
+        "START": 1,
+        "id_prefix": "res_",
+        "id_form": "{}",
+        "id_suffix": "",
+        "file_suffix": 'json',
+        "points_len": None,
     }
 }
 

@@ -31,4 +31,5 @@ python format_transfer.py --dt-file task3-results/results.pkl.json --mode rects 
 python eval.py --gt-file data/lsvt_val_v2.json --dt-file data/lsvt_val_v2_det.json
 ```
 
-- [ ] Too Slow for evaluation
+- [x] Too Slow for evaluation
+
