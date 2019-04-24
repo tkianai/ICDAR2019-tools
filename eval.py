@@ -32,6 +32,14 @@ class IcdarEval(object):
         else:
             self.gt_anns = json.load(open(gt_file))
 
+        self.Precision = None
+        self.Recall = None
+    
+    def calculate_F_score(self, Precision, Recall):
+        eps = 1e-7
+        F_score = 2.0 * Precision * Recall / (Precision + Recall + eps)
+        return F_score
+
     def eval_map(self, mode='segm'):
         """evaluate mean average precision
         
@@ -52,7 +60,73 @@ class IcdarEval(object):
         evalObj.accumulate()
         evalObj.summarize()
 
-    def eval_F(self, threshold=None, save_dir='./data'):
+    def save_pr_curve(self, save_name='./data/P_R_curve.png'):
+        if self.Precision is None or self.Recall is None:
+            return
+
+        # save the P-R curve
+        save_dir = os.path.dirname(save_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        
+        plt.clf()
+        plt.plot(self.Recall, self.Precision)
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
+        plt.title('Precision-Recall Curve')
+        plt.grid()
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.savefig(save_name, dpi=400)
+        print('Precision-recall curve has been written to {}'.format(save_name))
+
+    def eval_F_by_coco(self, threshold=None, mode='segm'):
+        iou_threshold = self.iou_threshold if threshold is None else threshold
+        assert iou_threshold >=0.0 and iou_threshold <= 1.0, "The IOU threshold [{}] is illegal!".format(iou_threshold)
+        if mode not in ['bbox', 'segm']:
+            raise NotImplementedError("Mode [{}] doesn't been implemented, choose from [bbox, segm]!".format(mode))
+
+        # eval map
+        Gt = COCO(self.gt_file)
+        Dt = Gt.loadRes(self.dt_file)
+
+        evalObj = COCOeval(Gt, Dt, mode)
+        imgIds = sorted(Gt.getImgIds())
+        evalObj.params.imgIds = imgIds
+        evalObj.params.iouThrs = [iou_threshold]
+        evalObj.params.areaRng = [[0, 10000000000.0]]
+        evalObj.params.maxDets = [100]
+
+        evalObj.evaluate()
+        evalObj.accumulate()
+
+        Precision = evalObj.eval['precision'][0, :, 0, 0, 0]
+        Recall = evalObj.params.recThrs
+        Scores = evalObj.eval['scores'][0, :, 0, 0, 0]
+
+        F_score = self.calculate_F_score(Precision, Recall)
+
+        # calculate highest F score
+        idx = np.argmax(F_score)
+        results = dict(
+            F_score=F_score[idx],
+            Precision=Precision[idx],
+            Recall=Recall[idx],
+            score=Scores[idx],
+        )
+
+        # summarize
+        print('---------------------- F1 ---------------------- ')
+        print('Maximum F-score: %f' % results['F_score'])
+        print('  |-- Precision: %f' % results['Precision'])
+        print('  |-- Recall   : %f' % results['Recall'])
+        print('  |-- Score    : %f' % results['score'])
+        print('------------------------------------------------ ')
+
+        self.Precision = Precision
+        self.Recall = Recall
+
+    def eval_F(self, threshold=None):
         iou_threshold = self.iou_threshold if threshold is None else threshold
         assert iou_threshold >=0.0 and iou_threshold <= 1.0, "The IOU threshold [{}] is illegal!".format(iou_threshold)
         assert self.gt_anns is not None, "GroundTruth must be needed!"
@@ -127,11 +201,10 @@ class IcdarEval(object):
         dt_scores_all = dt_scores_all[sort_idx]
 
         number_positive = np.cumsum(dt_gt_match_all)
-        number_detected = np.arrange(1, len(dt_gt_match_all) + 1)
+        number_detected = np.arange(1, len(dt_gt_match_all) + 1)
         Precision = number_positive.astype(np.float) / number_detected.astype(np.float)
         Recall = number_positive.astype(np.float) / float(gt_polygons_number)
-        eps = 1e-7
-        F_score = 2.0 * Precision * Recall / (Precision + Recall + eps)
+        F_score = self.calculate_F_score(Precision, Recall)
 
         # calculate highest F score
         idx = np.argmax(F_score)
@@ -150,20 +223,8 @@ class IcdarEval(object):
         print('  |-- Score    : %f' % results['score'])
         print('------------------------------------------------ ')
 
-        # save the P-R curve
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        vis_save_path = os.path.join(save_dir, 'P_R_curve.png')
-        plt.clf()
-        plt.plot(Recall, Precision)
-        plt.xlim(0, 1)
-        plt.ylim(0, 1)
-        plt.title('Precision-Recall Curve')
-        plt.grid()
-        plt.xlabel('Recall')
-        plt.ylabel('Precision')
-        plt.savefig(vis_save_path, dpi=400)
-        print('Precision-recall curve has been written to {}'.format(vis_save_path))
+        self.Precision = Precision
+        self.Recall = Recall
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='mAP evaluation on ICDAR2019')
@@ -180,4 +241,6 @@ if __name__ == "__main__":
     eval_icdar = IcdarEval(args.dt_file, args.gt_file)
     eval_icdar.eval_map(mode='bbox')
     eval_icdar.eval_map(mode='segm')
-    eval_icdar.eval_F()
+    eval_icdar.eval_F_by_coco(threshold=0.5, mode='segm')
+    eval_icdar.save_pr_curve()
+    # eval_icdar.eval_F()
