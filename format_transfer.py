@@ -53,7 +53,7 @@ CONFIG = {
 class FORMAT(object):
     def __init__(self, dt_file, mode='lsvt'):
         mode = mode.lower()
-        assert mode in ['lsvt', 'rects'], "Mode [{}] is not supported! Try [lsvt | rects]!"
+        assert mode in ['lsvt', 'rects', 'art'], "Mode [{}] is not supported! Try [lsvt | rects | art]!"
         self.results = json.load(open(dt_file))
         self.config = CONFIG[mode]
     
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Tranfer the format to submission style.")
     parser.add_argument('--dt-file', default=None, help='coco style detection file.')
-    parser.add_argument('--mode', default='lsvt', help='choose the format you want transfer to, [lsvt | rects].')
+    parser.add_argument('--mode', default='lsvt', help='choose the format you want transfer to, [lsvt | rects | art].')
     parser.add_argument('--save', default='data/lsvt_task1.json', help='filepath to save the transfered results.')
     args = parser.parse_args()
 
