@@ -41,7 +41,7 @@ CONFIG = {
     "art": {
         "name": "art",
         "TOTAL_NUM": 4563,
-        "START": 1,
+        "START": 0,
         "id_prefix": "res_",
         "id_form": "{}",
         "id_suffix": "",
@@ -161,10 +161,13 @@ class FORMAT(object):
             submission_out[fileid].append(info)
 
         # validate all files
-        for i in range(self.config['START'], self.config['START'] + self.config['TOTAL_NUM']):
-            id_ = self.config['id_prefix'] + self.config['id_form'].format(i) + self.config['id_suffix']
-            if id_ not in submission_out:
-                submission_out[id_] = []
+        if self.config['name'] == 'art':
+            assert len(submission_out) == self.config['TOTAL_NUM']
+        else:
+            for i in range(self.config['START'], self.config['START'] + self.config['TOTAL_NUM']):
+                id_ = self.config['id_prefix'] + self.config['id_form'].format(i) + self.config['id_suffix']
+                if id_ not in submission_out:
+                    submission_out[id_] = []
 
         # save file
         with open(save_name, 'w') as w_obj:

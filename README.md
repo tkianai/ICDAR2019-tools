@@ -12,6 +12,10 @@ This repo develops the tools for ICDAR2019 competitions. You can find details [h
 
 [Reading Chinese Text on Signboard](http://rrc.cvc.uab.es/?ch=12)
 
+- [x] ArT
+
+[Arbitrary-Shaped Text](http://rrc.cvc.uab.es/?ch=14)
+
 ## Usage
 
 - Transfer the detection format from coco-style to submission style
@@ -32,4 +36,3 @@ python eval.py --gt-file data/lsvt_val_v2.json --dt-file data/lsvt_val_v2_det.js
 ```
 
 - [x] Too Slow for evaluation
-
