@@ -16,6 +16,7 @@ import argparse
 from tqdm import tqdm
 import pycocotools.mask as maskUtils
 from imantics import Mask as maskToPolygon
+import pickle
 
 CONFIG = {
     "lsvt": {
@@ -122,7 +123,7 @@ class FORMAT(object):
 
         submission_out = {}
         for itm in tqdm(self.results):
-            fileid = self.config['id_prefix'] + itm['image_id'] + self.config['id_suffix']
+            fileid = self.config['id_prefix'] + str(itm['image_id']) + self.config['id_suffix']
             if fileid not in submission_out:
                 submission_out[fileid] = []
             
@@ -162,7 +163,15 @@ class FORMAT(object):
 
         # validate all files
         if self.config['name'] == 'art':
-            assert len(submission_out) == self.config['TOTAL_NUM']
+            # assert len(submission_out) == self.config['TOTAL_NUM']
+            with open('tmp_submission.pkl', 'wb') as w_obj:
+                pickle.dump(submission_out, w_obj)
+            with open('data/ids-art.pkl', 'rb') as r_obj:
+                ids = pickle.load(r_obj)
+            for idx in ids:
+                id_ = self.config['id_prefix'] + self.config['id_form'].format(idx) + self.config['id_suffix']
+                if id_ not in submission_out:
+                    submission_out[id_] = []
         else:
             for i in range(self.config['START'], self.config['START'] + self.config['TOTAL_NUM']):
                 id_ = self.config['id_prefix'] + self.config['id_form'].format(i) + self.config['id_suffix']
